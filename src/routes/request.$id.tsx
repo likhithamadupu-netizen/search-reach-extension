@@ -46,7 +46,6 @@ import {
   EscalateSearchButton,
   EscalationHistory,
   SearchRadiusChip,
-  useEscalation,
 } from "@/components/bb/escalate-search";
 import {
   Dialog,
