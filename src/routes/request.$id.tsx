@@ -290,7 +290,10 @@ function RequestDetail() {
           <Card className="gap-4 p-6 shadow-soft">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-2xl">Emergency tracking</h2>
-              <Chip tone="neutral">Live emergency tracking — prototype simulation</Chip>
+              <div className="flex flex-wrap items-center gap-2">
+                <SearchRadiusChip request={request} />
+                <Chip tone="neutral">Live emergency tracking — prototype simulation</Chip>
+              </div>
             </div>
 
             <EmergencyMap
@@ -302,7 +305,12 @@ function RequestDetail() {
                 confirmedAlert?.distanceLabel ?? confirmedMatch?.distanceLabel ?? null
               }
               candidates={mapCandidates}
+              searchRadiusKm={searchRadiusKm}
+              escalationCount={escalationCount}
             />
+
+            <EscalationHistory request={request} />
+
 
 
             <ol className="space-y-1">
