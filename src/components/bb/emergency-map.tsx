@@ -141,19 +141,44 @@ export function EmergencyMap({
             </defs>
             <rect width="100" height="100" fill="url(#bb-emap-grid)" />
 
-            {/* pulse rings around the hospital */}
-            {[6, 12, 20].map((r) => (
-              <circle
-                key={r}
+            {/* pulse rings — scaled off the current search radius */}
+            {[0.34, 0.67].map((f) => (
+              <ellipse
+                key={f}
                 cx={hospital!.x}
                 cy={hospital!.y}
-                r={r}
+                rx={ringRx * f}
+                ry={ringRy * f}
                 fill="none"
                 strokeWidth="0.35"
                 strokeDasharray="1.5 1.5"
-                className="stroke-primary/35"
+                className="stroke-primary/30"
               />
             ))}
+
+            {/* current search radius ring */}
+            <ellipse
+              cx={hospital!.x}
+              cy={hospital!.y}
+              rx={ringRx}
+              ry={ringRy}
+              className={
+                escalated
+                  ? "fill-warning/10 stroke-warning"
+                  : "fill-primary/5 stroke-primary/60"
+              }
+              strokeWidth="0.6"
+              strokeDasharray="2.5 1.5"
+            />
+            <text
+              x={hospital!.x}
+              y={hospital!.y - ringRy - 1.5}
+              textAnchor="middle"
+              className="fill-muted-foreground"
+              style={{ fontSize: 3.4, fontWeight: 700 }}
+            >
+              {searchRadiusKm} km
+            </text>
 
             {/* unconfirmed candidate markers */}
             {!donor &&
