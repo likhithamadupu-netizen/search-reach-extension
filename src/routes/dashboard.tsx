@@ -85,12 +85,20 @@ function DonorDashboard() {
   const accepted = requests.filter((r) => r.acceptedDonorIds.includes(donor.id));
 
   function handleAccept(request: BloodRequest) {
-    acceptRequest(request.id, donor.id);
+    const ok = acceptRequest(request.id, donor.id);
+
+    if (!ok) {
+      toast.error(
+        "You already accepted another emergency request. Complete or cancel it before accepting a new one.",
+      );
+
+      return;
+    }
+
     toast.success(`You accepted request ${request.id}`, {
       description: "The seeker can now see your contact details.",
     });
   }
-
   return (
     <div className="shell pb-20">
       <PageHeader
