@@ -77,6 +77,15 @@ export function EmergencyMap({
     y: 100 - pad - ((lat - minLat) / spanLat) * (100 - pad * 2),
   });
 
+  // Canvas units per km, derived from the same projection — so the search ring
+  // always reflects the CURRENT radius instead of a hardcoded size.
+  const kmPerLngDeg = 111.32 * Math.cos((request.lat * Math.PI) / 180) || 111.32;
+  const unitsPerKmX = ((100 - pad * 2) / spanLng) / kmPerLngDeg;
+  const unitsPerKmY = ((100 - pad * 2) / spanLat) / 110.57;
+  const ringRx = Math.min(Math.max(searchRadiusKm * unitsPerKmX, 8), 46);
+  const ringRy = Math.min(Math.max(searchRadiusKm * unitsPerKmY, 8), 46);
+  const escalated = escalationCount > 0;
+
   const hospital = hospitalOk ? project(request.lat, request.lng) : null;
   const donor = donorOk ? project(confirmedDonor!.lat, confirmedDonor!.lng) : null;
   const progress =
