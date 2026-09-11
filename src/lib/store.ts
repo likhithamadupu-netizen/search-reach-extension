@@ -24,9 +24,9 @@ export interface AppUser {
 export type AlertResponse = "pending" | "accepted" | "declined";
 
 /**
- * A local/demo emergency alert. No real SMS, push or email is ever sent —
+ * A local/demo emergency alert.
+ * No real SMS, push or email is ever sent —
  * these records only drive the in-app donor response workflow.
- * Match data is a snapshot of the Smart Match Engine result at alert time.
  */
 export interface EmergencyAlert {
   id: string;
@@ -35,19 +35,21 @@ export interface EmergencyAlert {
   createdAt: string;
   response: AlertResponse;
   respondedAt: string | null;
-  /** Smart Match Engine snapshot — never recomputed with another algorithm. */
+
+  /** Smart Match Engine snapshot */
   score: number;
   distanceKm: number;
   distanceLabel: string;
   why: string[];
   primaryReason: string;
-  /** Set when the alert was created by an expanded (escalated) search. */
+
+  /** Set when the alert was created by an expanded search */
   viaEscalation?: number;
 }
 
 /**
- * Day 5 — manual emergency escalation record. One row per confirmed
- * "Escalate Search" action. Never created automatically.
+ * Manual emergency escalation record.
+ * One row per confirmed "Escalate Search" action.
  */
 export interface EscalationRecord {
   id: string;
@@ -61,20 +63,21 @@ export interface EscalationRecord {
   status: "completed";
 }
 
+/**
+ * Base search radius and escalation configuration.
+ */
 export const BASE_SEARCH_RADIUS_KM = 10;
 export const ESCALATION_STEP_KM = 10;
 export const MAX_ESCALATIONS = 2;
 
-/** A single demo tracking event ("Emergency activity" log entry). */
+/** A single demo tracking event */
 export interface TrackingEvent {
   at: string;
   label: string;
 }
 
 /**
- * Local/demo live-tracking record for one request. Stages are derived from the
- * existing request status + alerts; only the manual demo transitions
- * (en route / donation completed) are stored as an override.
+ * Local/demo live-tracking record for one request.
  */
 export interface TrackingRecord {
   override: "en_route" | "donation_completed" | null;
@@ -86,17 +89,26 @@ interface AppState {
   user: AppUser | null;
   donors: Donor[];
   requests: BloodRequest[];
+
   /** requestId -> donorIds the seeker has personally invited */
   invites: Record<string, string[]>;
+
   alerts: EmergencyAlert[];
+
   /** requestId -> demo tracking record */
   tracking: Record<string, TrackingRecord>;
-  /** manual search escalations (Day 5) */
+
+  /** manual search escalations */
   escalations: EscalationRecord[];
+
   nextRequestNumber: number;
 }
 
 const STORAGE_KEY = "bloodbridge.state.v3";
+
+/* -------------------------------------------------------------------------- */
+/*                              INITIAL STATE                                 */
+/* -------------------------------------------------------------------------- */
 
 function initialState(): AppState {
   return {
@@ -111,15 +123,31 @@ function initialState(): AppState {
   };
 }
 
-export const EMPTY_TRACKING: TrackingRecord = { override: null, timestamps: {}, events: [] };
+export const EMPTY_TRACKING: TrackingRecord = {
+  override: null,
+  timestamps: {},
+  events: [],
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                TRACKING                                    */
+/* -------------------------------------------------------------------------- */
 
 function withTracking(
   s: AppState,
   requestId: string,
   patch: (rec: TrackingRecord) => TrackingRecord,
 ): Record<string, TrackingRecord> {
-  const rec = s.tracking[requestId] ?? { override: null, timestamps: {}, events: [] };
-  return { ...s.tracking, [requestId]: patch(rec) };
+  const rec = s.tracking[requestId] ?? {
+    override: null,
+    timestamps: {},
+    events: [],
+  };
+
+  return {
+    ...s.tracking,
+    [requestId]: patch(rec),
+  };
 }
 
 function stamp(
@@ -130,22 +158,40 @@ function stamp(
 ): TrackingRecord {
   return {
     ...rec,
-    timestamps: { ...rec.timestamps, [stage]: rec.timestamps[stage] ?? at },
-    events: [...rec.events, { at, label }],
+
+    timestamps: {
+      ...rec.timestamps,
+      [stage]: rec.timestamps[stage] ?? at,
+    },
+
+    events: [
+      ...rec.events,
+      {
+        at,
+        label,
+      },
+    ],
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/*                              STORE SETUP                                   */
+/* -------------------------------------------------------------------------- */
 
 let state: AppState = initialState();
 let hydrated = false;
+
 const listeners = new Set<() => void>();
 
 function emit() {
-  for (const l of listeners) l();
+  for (const l of listeners) {
+    l();
+  }
 }
 
 function persist() {
   if (typeof window === "undefined") return;
+
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
@@ -155,12 +201,20 @@ function persist() {
 
 export function hydrateStore() {
   if (hydrated || typeof window === "undefined") return;
+
   hydrated = true;
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
+
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppState>;
-      state = { ...initialState(), ...parsed };
+
+      state = {
+        ...initialState(),
+        ...parsed,
+      };
+
       emit();
     }
   } catch {
@@ -176,11 +230,14 @@ function setState(update: (prev: AppState) => AppState) {
 
 function subscribe(cb: () => void) {
   listeners.add(cb);
+
   return () => listeners.delete(cb);
 }
 
 const getSnapshot = () => state;
+
 const serverSnapshot = initialState();
+
 const getServerSnapshot = () => serverSnapshot;
 
 export function useAppState<T>(selector: (s: AppState) => T): T {
@@ -191,20 +248,31 @@ export function useAppState<T>(selector: (s: AppState) => T): T {
   );
 }
 
-export const useUser = () => useAppState((s) => s.user);
-export const useDonors = () => useAppState((s) => s.donors);
-export const useRequests = () => useAppState((s) => s.requests);
-export const useInvites = () => useAppState((s) => s.invites);
-export const useAlerts = () => useAppState((s) => s.alerts);
-export const useTracking = () => useAppState((s) => s.tracking);
-export const useEscalations = () => useAppState((s) => s.escalations);
+/* -------------------------------------------------------------------------- */
+/*                                  HOOKS                                     */
+/* -------------------------------------------------------------------------- */
 
+export const useUser = () => useAppState((s) => s.user);
+
+export const useDonors = () => useAppState((s) => s.donors);
+
+export const useRequests = () => useAppState((s) => s.requests);
+
+export const useInvites = () => useAppState((s) => s.invites);
+
+export const useAlerts = () => useAppState((s) => s.alerts);
+
+export const useTracking = () => useAppState((s) => s.tracking);
+
+export const useEscalations = () => useAppState((s) => s.escalations);
 
 export function currentUser() {
   return state.user;
 }
 
-/* ---------------------------------- auth --------------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                                   AUTH                                     */
+/* -------------------------------------------------------------------------- */
 
 export interface DonorSignup {
   bloodGroup: BloodGroup;
@@ -214,50 +282,90 @@ export interface DonorSignup {
 }
 
 export function register(
-  data: { role: Role; name: string; email: string; phone: string },
+  data: {
+    role: Role;
+    name: string;
+    email: string;
+    phone: string;
+  },
   donorData?: DonorSignup,
 ) {
   const id = `u-${Date.now()}`;
+
   if (data.role === "donor" && donorData) {
     const donorId = `me-${id}`;
+
     const donor: Donor = {
       id: donorId,
       name: data.name,
       bloodGroup: donorData.bloodGroup,
       area: donorData.area || "Banjara Hills",
       city: "Hyderabad",
+
       lat: CITY_CENTER.lat + 0.004,
       lng: CITY_CENTER.lng + 0.004,
+
       available: donorData.available,
+
       verified: false,
+
       lastDonationDate: donorData.lastDonationDate,
+
       donations: 0,
+
       avgResponseMinutes: 15,
+
       phone: data.phone,
     };
+
     setState((s) => ({
       ...s,
+
       donors: [donor, ...s.donors],
-      user: { id, role: "donor", name: data.name, email: data.email, phone: data.phone, donorId },
+
+      user: {
+        id,
+        role: "donor",
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        donorId,
+      },
     }));
   } else {
     setState((s) => ({
       ...s,
-      user: { id, role: data.role, name: data.name, email: data.email, phone: data.phone },
+
+      user: {
+        id,
+        role: data.role,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+      },
     }));
   }
+
   return state.user!;
 }
 
-/** Prototype auth: no password verification against a backend. */
+/**
+ * Prototype auth:
+ * no password verification against a backend.
+ */
 export function login(email: string, role: Role) {
   const existing = state.user;
-  if (existing && existing.email.toLowerCase() === email.toLowerCase()) return existing;
+
+  if (existing && existing.email.toLowerCase() === email.toLowerCase()) {
+    return existing;
+  }
 
   if (role === "donor") {
     const donor = state.donors[0]!;
+
     setState((s) => ({
       ...s,
+
       user: {
         id: "demo-donor",
         role: "donor",
@@ -270,37 +378,162 @@ export function login(email: string, role: Role) {
   } else {
     setState((s) => ({
       ...s,
-      user: { id: "s-demo", role: "seeker", name: "Meghana Rao", email, phone: "+91 98490 55501" },
+
+      user: {
+        id: "s-demo",
+        role: "seeker",
+        name: "Meghana Rao",
+        email,
+        phone: "+91 98490 55501",
+      },
     }));
   }
+
   return state.user!;
 }
 
 export function logout() {
-  setState((s) => ({ ...s, user: null }));
+  setState((s) => ({
+    ...s,
+    user: null,
+  }));
 }
 
 export function updateProfile(patch: Partial<AppUser>) {
-  setState((s) => (s.user ? { ...s, user: { ...s.user, ...patch } } : s));
+  setState((s) =>
+    s.user
+      ? {
+          ...s,
+          user: {
+            ...s.user,
+            ...patch,
+          },
+        }
+      : s,
+  );
 }
 
-/* --------------------------------- donors -------------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                                  DONORS                                    */
+/* -------------------------------------------------------------------------- */
 
 export function setDonorAvailability(donorId: string, available: boolean) {
   setState((s) => ({
     ...s,
-    donors: s.donors.map((d) => (d.id === donorId ? { ...d, available } : d)),
+
+    donors: s.donors.map((d) =>
+      d.id === donorId
+        ? {
+            ...d,
+            available,
+          }
+        : d,
+    ),
   }));
 }
 
 export function updateDonor(donorId: string, patch: Partial<Donor>) {
   setState((s) => ({
     ...s,
-    donors: s.donors.map((d) => (d.id === donorId ? { ...d, ...patch } : d)),
+
+    donors: s.donors.map((d) =>
+      d.id === donorId
+        ? {
+            ...d,
+            ...patch,
+          }
+        : d,
+    ),
   }));
 }
 
-/* -------------------------------- requests -------------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                     DONOR ACTIVE REQUEST PROTECTION                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Returns true if the donor is currently assigned to an active request.
+ *
+ * IMPORTANT:
+ * A donor can accept only ONE active request at a time.
+ *
+ * Fulfilled and cancelled requests are not considered active.
+ */
+export function donorHasActiveRequest(donorId: string, requests: BloodRequest[]): boolean {
+  return requests.some(
+    (request) =>
+      request.acceptedDonorIds.includes(donorId) &&
+      request.status !== "fulfilled" &&
+      request.status !== "cancelled",
+  );
+}
+
+/**
+ * Returns the active request currently assigned to a donor.
+ *
+ * Returns null if the donor has no active request.
+ */
+export function getDonorActiveRequest(
+  donorId: string,
+  requests: BloodRequest[],
+): BloodRequest | null {
+  return (
+    requests.find(
+      (request) =>
+        request.acceptedDonorIds.includes(donorId) &&
+        request.status !== "fulfilled" &&
+        request.status !== "cancelled",
+    ) ?? null
+  );
+}
+
+/**
+ * Returns whether the donor is allowed to accept a specific request.
+ *
+ * This is useful for the UI as well as the core business logic.
+ */
+export function canDonorAcceptRequest(
+  donorId: string,
+  requestId: string,
+): {
+  ok: boolean;
+  reason: string | null;
+} {
+  const request = state.requests.find((r) => r.id === requestId);
+
+  if (!request) {
+    return {
+      ok: false,
+      reason: "Request not found.",
+    };
+  }
+
+  if (request.status === "fulfilled" || request.status === "cancelled") {
+    return {
+      ok: false,
+      reason: "This request is already closed.",
+    };
+  }
+
+  const activeRequest = getDonorActiveRequest(donorId, state.requests);
+
+  if (activeRequest && activeRequest.id !== requestId) {
+    return {
+      ok: false,
+      reason:
+        "You already accepted another emergency request. Complete or cancel that request before accepting a new one.",
+    };
+  }
+
+  return {
+    ok: true,
+    reason: null,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                REQUESTS                                    */
+/* -------------------------------------------------------------------------- */
 
 export interface NewRequestInput {
   bloodGroup: BloodGroup;
@@ -316,37 +549,60 @@ export interface NewRequestInput {
 
 export function createRequest(input: NewRequestInput): BloodRequest {
   const user = state.user;
+
   const id = `BB-${state.nextRequestNumber}`;
+
   const request: BloodRequest = {
     ...input,
+
     id,
+
     seekerId: user?.id ?? "guest",
+
     seekerName: user?.name ?? "Guest seeker",
+
     status: "searching",
+
     createdAt: new Date().toISOString(),
+
     notifiedDonorIds: [],
+
     acceptedDonorIds: [],
   };
+
   setState((s) => ({
     ...s,
+
     requests: [request, ...s.requests],
+
     tracking: withTracking(s, id, (rec) => {
       const withCreated = stamp(rec, "created", "Emergency request created", request.createdAt);
-      return stamp(withCreated, "matching", "Smart Match Engine ranked compatible donors", request.createdAt);
+
+      return stamp(
+        withCreated,
+        "matching",
+        "Smart Match Engine ranked compatible donors",
+        request.createdAt,
+      );
     }),
+
     nextRequestNumber: s.nextRequestNumber + 1,
   }));
+
   return request;
 }
 
 export function notifyDonors(requestId: string, donorIds: string[]) {
   setState((s) => ({
     ...s,
+
     requests: s.requests.map((r) =>
       r.id === requestId
         ? {
             ...r,
+
             status: r.status === "searching" ? "notified" : r.status,
+
             notifiedDonorIds: Array.from(new Set([...r.notifiedDonorIds, ...donorIds])),
           }
         : r,
@@ -357,12 +613,20 @@ export function notifyDonors(requestId: string, donorIds: string[]) {
 export function inviteDonor(requestId: string, donorId: string) {
   setState((s) => ({
     ...s,
-    invites: { ...s.invites, [requestId]: Array.from(new Set([...(s.invites[requestId] ?? []), donorId])) },
+
+    invites: {
+      ...s.invites,
+
+      [requestId]: Array.from(new Set([...(s.invites[requestId] ?? []), donorId])),
+    },
+
     requests: s.requests.map((r) =>
       r.id === requestId
         ? {
             ...r,
+
             status: r.status === "searching" ? "notified" : r.status,
+
             notifiedDonorIds: Array.from(new Set([...r.notifiedDonorIds, donorId])),
           }
         : r,
@@ -370,32 +634,87 @@ export function inviteDonor(requestId: string, donorId: string) {
   }));
 }
 
-export function acceptRequest(requestId: string, donorId: string) {
+/* -------------------------------------------------------------------------- */
+/*                         ACCEPT REQUEST DIRECTLY                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Accept a request directly.
+ *
+ * IMPORTANT:
+ * A donor cannot accept more than ONE active request.
+ */
+export function acceptRequest(requestId: string, donorId: string): boolean {
+  const request = state.requests.find((r) => r.id === requestId);
+
+  if (!request) {
+    return false;
+  }
+
+  /* Prevent accepting closed requests */
+  if (request.status === "fulfilled" || request.status === "cancelled") {
+    return false;
+  }
+
+  /* Prevent donor from accepting multiple active requests */
+  const activeRequest = getDonorActiveRequest(donorId, state.requests);
+
+  if (activeRequest && activeRequest.id !== requestId) {
+    return false;
+  }
+
   const now = new Date().toISOString();
+
   const donorName = state.donors.find((d) => d.id === donorId)?.name ?? "A donor";
+
   setState((s) => ({
     ...s,
+
     alerts: s.alerts.map((a) =>
       a.requestId === requestId && a.donorId === donorId && a.response === "pending"
-        ? { ...a, response: "accepted", respondedAt: now }
+        ? {
+            ...a,
+
+            response: "accepted",
+
+            respondedAt: now,
+          }
         : a,
     ),
+
     tracking: withTracking(s, requestId, (rec) =>
       stamp(rec, "confirmed", `${donorName} accepted the emergency`, now),
     ),
+
     requests: s.requests.map((r) =>
       r.id === requestId
         ? {
             ...r,
+
             status: r.status === "fulfilled" ? r.status : "accepted",
+
             acceptedDonorIds: Array.from(new Set([...r.acceptedDonorIds, donorId])),
           }
         : r,
     ),
+
+    /* Automatically make donor unavailable */
+    donors: s.donors.map((d) =>
+      d.id === donorId
+        ? {
+            ...d,
+            available: false,
+          }
+        : d,
+    ),
   }));
+
+  return true;
 }
 
-/* ----------------------------- emergency alerts ---------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                           EMERGENCY ALERTS                                 */
+/* -------------------------------------------------------------------------- */
 
 export interface EmergencyAlertInput {
   donorId: string;
@@ -407,40 +726,62 @@ export interface EmergencyAlertInput {
 }
 
 /**
- * Creates local/demo emergency alerts from Smart Match Engine results.
- * Donors already alerted for this request are skipped. Returns created count.
+ * Creates local/demo emergency alerts from
+ * Smart Match Engine results.
+ *
+ * Donors already alerted for this request are skipped.
  */
 export function createEmergencyAlerts(requestId: string, inputs: EmergencyAlertInput[]): number {
   const existing = new Set(
     state.alerts.filter((a) => a.requestId === requestId).map((a) => a.donorId),
   );
+
   const fresh = inputs.filter((i) => !existing.has(i.donorId));
+
   if (fresh.length === 0) return 0;
+
   const now = new Date().toISOString();
+
   const created: EmergencyAlert[] = fresh.map((i) => ({
     id: `al-${requestId}-${i.donorId}`,
+
     requestId,
+
     donorId: i.donorId,
+
     createdAt: now,
+
     response: "pending",
+
     respondedAt: null,
+
     score: i.score,
+
     distanceKm: i.distanceKm,
+
     distanceLabel: i.distanceLabel,
+
     why: i.why,
+
     primaryReason: i.primaryReason,
   }));
+
   setState((s) => ({
     ...s,
+
     alerts: [...created, ...s.alerts],
+
     tracking: withTracking(s, requestId, (rec) =>
       stamp(rec, "alerted", `${created.length} compatible donor(s) alerted`, now),
     ),
+
     requests: s.requests.map((r) =>
       r.id === requestId
         ? {
             ...r,
+
             status: r.status === "searching" ? "notified" : r.status,
+
             notifiedDonorIds: Array.from(
               new Set([...r.notifiedDonorIds, ...created.map((c) => c.donorId)]),
             ),
@@ -448,40 +789,115 @@ export function createEmergencyAlerts(requestId: string, inputs: EmergencyAlertI
         : r,
     ),
   }));
+
   return created.length;
 }
 
-/** Donor accept/decline. Returns false when the alert is missing or already answered. */
+/* -------------------------------------------------------------------------- */
+/*                         DONOR ALERT RESPONSE                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Donor accepts or declines an emergency alert.
+ *
+ * IMPORTANT:
+ * A donor can accept ONLY ONE active request.
+ */
 export function respondToAlert(alertId: string, response: "accepted" | "declined"): boolean {
   const alert = state.alerts.find((a) => a.id === alertId);
-  if (!alert || alert.response !== "pending") return false;
+
+  if (!alert || alert.response !== "pending") {
+    return false;
+  }
+
   const request = state.requests.find((r) => r.id === alert.requestId);
-  if (!request || request.status === "cancelled") return false;
+
+  if (!request || request.status === "cancelled") {
+    return false;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* NEW: ONE ACTIVE REQUEST PER DONOR                                      */
+  /* ---------------------------------------------------------------------- */
+
+  if (response === "accepted") {
+    const activeRequest = getDonorActiveRequest(alert.donorId, state.requests);
+
+    if (activeRequest && activeRequest.id !== alert.requestId) {
+      return false;
+    }
+  }
+
   const now = new Date().toISOString();
+
   const donorName = state.donors.find((d) => d.id === alert.donorId)?.name ?? "A donor";
+
   setState((s) => ({
     ...s,
-    alerts: s.alerts.map((a) => (a.id === alertId ? { ...a, response, respondedAt: now } : a)),
+
+    alerts: s.alerts.map((a) =>
+      a.id === alertId
+        ? {
+            ...a,
+
+            response,
+
+            respondedAt: now,
+          }
+        : a,
+    ),
+
     tracking: withTracking(s, alert.requestId, (rec) =>
       response === "accepted"
         ? stamp(rec, "confirmed", `${donorName} accepted the emergency`, now)
-        : { ...rec, events: [...rec.events, { at: now, label: `${donorName} declined` }] },
+        : {
+            ...rec,
+
+            events: [
+              ...rec.events,
+              {
+                at: now,
+                label: `${donorName} declined`,
+              },
+            ],
+          },
     ),
+
     requests:
       response === "accepted"
         ? s.requests.map((r) =>
             r.id === alert.requestId
               ? {
                   ...r,
+
                   status: r.status === "fulfilled" ? r.status : "accepted",
+
                   acceptedDonorIds: Array.from(new Set([...r.acceptedDonorIds, alert.donorId])),
                 }
               : r,
           )
         : s.requests,
+
+    /* Automatically mark donor unavailable */
+    donors:
+      response === "accepted"
+        ? s.donors.map((d) =>
+            d.id === alert.donorId
+              ? {
+                  ...d,
+                  available: false,
+                }
+              : d,
+          )
+        : s.donors,
   }));
+
   return true;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                             ALERT SUMMARY                                  */
+/* -------------------------------------------------------------------------- */
 
 export interface AlertSummary {
   alerted: number;
@@ -492,15 +908,21 @@ export interface AlertSummary {
 
 export function summarizeAlerts(alerts: EmergencyAlert[], requestId: string): AlertSummary {
   const scoped = alerts.filter((a) => a.requestId === requestId);
+
   return {
     alerted: scoped.length,
+
     accepted: scoped.filter((a) => a.response === "accepted").length,
+
     pending: scoped.filter((a) => a.response === "pending").length,
+
     declined: scoped.filter((a) => a.response === "declined").length,
   };
 }
 
-/* --------------------------- emergency escalation -------------------------- */
+/* -------------------------------------------------------------------------- */
+/*                         EMERGENCY ESCALATION                              */
+/* -------------------------------------------------------------------------- */
 
 export function escalationsFor(escalations: EscalationRecord[], requestId: string) {
   return escalations
@@ -508,16 +930,28 @@ export function escalationsFor(escalations: EscalationRecord[], requestId: strin
     .sort((a, b) => a.escalationNumber - b.escalationNumber);
 }
 
-/** Current geographic search radius for a request (base 10 km, +10 km per escalation). */
+/**
+ * Current geographic search radius for a request.
+ */
 export function currentSearchRadius(escalations: EscalationRecord[], requestId: string): number {
   const scoped = escalationsFor(escalations, requestId);
+
   const last = scoped[scoped.length - 1];
+
   return last ? last.newRadius : BASE_SEARCH_RADIUS_KM;
 }
 
-/** Next radius if another escalation is still allowed, otherwise null. */
-export function nextEscalationRadius(escalations: EscalationRecord[], requestId: string): number | null {
-  if (escalationsFor(escalations, requestId).length >= MAX_ESCALATIONS) return null;
+/**
+ * Next radius if another escalation is allowed.
+ */
+export function nextEscalationRadius(
+  escalations: EscalationRecord[],
+  requestId: string,
+): number | null {
+  if (escalationsFor(escalations, requestId).length >= MAX_ESCALATIONS) {
+    return null;
+  }
+
   return currentSearchRadius(escalations, requestId) + ESCALATION_STEP_KM;
 }
 
@@ -526,81 +960,141 @@ export interface EscalationGate {
   reason: string | null;
 }
 
-/** Manual escalation is only offered for an active, alerted, unaccepted request. */
+/**
+ * Manual escalation is only offered for an active,
+ * alerted, unaccepted request.
+ */
 export function canEscalate(
   request: BloodRequest,
   alerts: EmergencyAlert[],
   escalations: EscalationRecord[],
 ): EscalationGate {
-  if (request.status === "fulfilled" || request.status === "cancelled")
-    return { ok: false, reason: "This request is closed." };
+  if (request.status === "fulfilled" || request.status === "cancelled") {
+    return {
+      ok: false,
+      reason: "This request is closed.",
+    };
+  }
+
   const scoped = alerts.filter((a) => a.requestId === request.id);
-  if (request.acceptedDonorIds.length > 0 || scoped.some((a) => a.response === "accepted"))
-    return { ok: false, reason: "A donor has already accepted this request." };
-  if (scoped.length === 0)
-    return { ok: false, reason: "Alert compatible donors before expanding the search." };
-  if (escalationsFor(escalations, request.id).length >= MAX_ESCALATIONS)
-    return { ok: false, reason: "Maximum search expansion reached." };
-  return { ok: true, reason: null };
+
+  if (request.acceptedDonorIds.length > 0 || scoped.some((a) => a.response === "accepted")) {
+    return {
+      ok: false,
+      reason: "A donor has already accepted this request.",
+    };
+  }
+
+  if (scoped.length === 0) {
+    return {
+      ok: false,
+      reason: "Alert compatible donors before expanding the search.",
+    };
+  }
+
+  if (escalationsFor(escalations, request.id).length >= MAX_ESCALATIONS) {
+    return {
+      ok: false,
+      reason: "Maximum search expansion reached.",
+    };
+  }
+
+  return {
+    ok: true,
+    reason: null,
+  };
 }
 
 export interface EscalateSearchInput {
   previousRadius: number;
   newRadius: number;
-  /** compatible donors inside the new radius that were not previously alerted */
+
+  /** Compatible donors inside new radius */
   newlyFoundCount: number;
-  /** Smart Match Engine results to alert (already filtered by the caller). */
+
+  /** Smart Match Engine results */
   candidates: EmergencyAlertInput[];
 }
 
 /**
- * Records a manual escalation and alerts ONLY donors not already alerted for
- * this request. Alerts use the exact same structure/snapshot as Day 2 alerts.
- * Returns null when escalation is not allowed right now.
+ * Records a manual escalation and alerts ONLY donors
+ * not already alerted for this request.
  */
-export function escalateSearch(requestId: string, input: EscalateSearchInput): EscalationRecord | null {
+export function escalateSearch(
+  requestId: string,
+  input: EscalateSearchInput,
+): EscalationRecord | null {
   const request = state.requests.find((r) => r.id === requestId);
+
   if (!request) return null;
-  if (!canEscalate(request, state.alerts, state.escalations).ok) return null;
+
+  if (!canEscalate(request, state.alerts, state.escalations).ok) {
+    return null;
+  }
 
   const now = new Date().toISOString();
+
   const escalationNumber = escalationsFor(state.escalations, requestId).length + 1;
+
   const existing = new Set(
     state.alerts.filter((a) => a.requestId === requestId).map((a) => a.donorId),
   );
+
   const created: EmergencyAlert[] = input.candidates
     .filter((i) => !existing.has(i.donorId))
     .map((i) => ({
       id: `al-${requestId}-${i.donorId}`,
+
       requestId,
+
       donorId: i.donorId,
+
       createdAt: now,
+
       response: "pending",
+
       respondedAt: null,
+
       score: i.score,
+
       distanceKm: i.distanceKm,
+
       distanceLabel: i.distanceLabel,
+
       why: i.why,
+
       primaryReason: i.primaryReason,
+
       viaEscalation: escalationNumber,
     }));
 
   const record: EscalationRecord = {
     id: `esc-${requestId}-${escalationNumber}`,
+
     requestId,
+
     previousRadius: input.previousRadius,
+
     newRadius: input.newRadius,
+
     newlyFoundCount: input.newlyFoundCount,
+
     newlyAlertedCount: created.length,
+
     timestamp: now,
+
     escalationNumber,
+
     status: "completed",
   };
 
   setState((s) => ({
     ...s,
+
     alerts: [...created, ...s.alerts],
+
     escalations: [...s.escalations, record],
+
     tracking: withTracking(s, requestId, (rec) => {
       const expanded = stamp(
         rec,
@@ -608,12 +1102,15 @@ export function escalateSearch(requestId: string, input: EscalateSearchInput): E
         `No response — search expanded ${input.previousRadius} km → ${input.newRadius} km`,
         now,
       );
+
       return {
         ...expanded,
+
         events: [
           ...expanded.events,
           {
             at: now,
+
             label:
               created.length > 0
                 ? `${created.length} additional compatible donor(s) alerted`
@@ -622,11 +1119,14 @@ export function escalateSearch(requestId: string, input: EscalateSearchInput): E
         ],
       };
     }),
+
     requests: s.requests.map((r) =>
       r.id === requestId
         ? {
             ...r,
+
             status: r.status === "searching" ? "notified" : r.status,
+
             notifiedDonorIds: Array.from(
               new Set([...r.notifiedDonorIds, ...created.map((c) => c.donorId)]),
             ),
@@ -634,62 +1134,118 @@ export function escalateSearch(requestId: string, input: EscalateSearchInput): E
         : r,
     ),
   }));
+
   return record;
 }
 
-
-
+/* -------------------------------------------------------------------------- */
+/*                            REQUEST STATUS                                  */
+/* -------------------------------------------------------------------------- */
 
 export function setRequestStatus(requestId: string, status: RequestStatus) {
-  setState((s) => ({
-    ...s,
-    requests: s.requests.map((r) => (r.id === requestId ? { ...r, status } : r)),
-    tracking:
-      status === "fulfilled"
-        ? withTracking(s, requestId, (rec) => stamp(rec, "fulfilled", "Request fulfilled"))
-        : status === "cancelled"
-          ? withTracking(s, requestId, (rec) => stamp(rec, "cancelled", "Request cancelled"))
-          : s.tracking,
-  }));
+  setState((s) => {
+    const request = s.requests.find((r) => r.id === requestId);
+
+    /*
+     * If the request is being fulfilled or cancelled,
+     * release all accepted donors.
+     */
+    const donorsToRelease =
+      status === "fulfilled" || status === "cancelled" ? (request?.acceptedDonorIds ?? []) : [];
+
+    return {
+      ...s,
+
+      requests: s.requests.map((r) =>
+        r.id === requestId
+          ? {
+              ...r,
+              status,
+            }
+          : r,
+      ),
+
+      donors: s.donors.map((d) =>
+        donorsToRelease.includes(d.id)
+          ? {
+              ...d,
+              available: true,
+            }
+          : d,
+      ),
+
+      tracking:
+        status === "fulfilled"
+          ? withTracking(s, requestId, (rec) => stamp(rec, "fulfilled", "Request fulfilled"))
+          : status === "cancelled"
+            ? withTracking(s, requestId, (rec) => stamp(rec, "cancelled", "Request cancelled"))
+            : s.tracking,
+    };
+  });
 }
 
-/* ----------------------------- live tracking ------------------------------ */
+/* -------------------------------------------------------------------------- */
+/*                            LIVE TRACKING                                  */
+/* -------------------------------------------------------------------------- */
 
 /**
- * Demo tracking transition (prototype simulation — no GPS, no medical
- * verification). Returns false when the transition is not valid right now.
+ * Demo tracking transition.
+ *
+ * No GPS or medical verification.
  */
-export function markTracking(
-  requestId: string,
-  stage: "en_route" | "donation_completed",
-): boolean {
+export function markTracking(requestId: string, stage: "en_route" | "donation_completed"): boolean {
   const request = state.requests.find((r) => r.id === requestId);
-  if (!request || request.status === "fulfilled" || request.status === "cancelled") return false;
+
+  if (!request || request.status === "fulfilled" || request.status === "cancelled") {
+    return false;
+  }
+
   const rec = state.tracking[requestId];
+
   const current = rec?.override ?? null;
+
   if (stage === "en_route") {
-    if (current !== null) return false;
-    if (request.acceptedDonorIds.length === 0) return false;
-  } else if (current !== "en_route") return false;
+    if (current !== null) {
+      return false;
+    }
+
+    if (request.acceptedDonorIds.length === 0) {
+      return false;
+    }
+  } else if (current !== "en_route") {
+    return false;
+  }
 
   setState((s) => ({
     ...s,
+
     tracking: withTracking(s, requestId, (r) => ({
       ...stamp(
         r,
         stage,
         stage === "en_route" ? "Donor marked En Route" : "Donation marked completed",
       ),
+
       override: stage,
     })),
   }));
+
   return true;
 }
 
+/* -------------------------------------------------------------------------- */
+/*                              RESET DEMO                                    */
+/* -------------------------------------------------------------------------- */
 
 export function resetDemoData() {
   const user = state.user;
-  state = { ...initialState(), user };
+
+  state = {
+    ...initialState(),
+    user,
+  };
+
   persist();
+
   emit();
 }
