@@ -550,6 +550,7 @@ function RequestDetail() {
                             {a.distanceLabel} · Match {a.score}/100
                           </p>
                         </div>
+                        {a.viaEscalation ? <Chip tone="warning">Expanded search</Chip> : null}
                         {a.response === "accepted" && <Chip tone="success">Donor confirmed</Chip>}
                         {a.response === "declined" && <Chip tone="danger">Declined</Chip>}
                         {a.response === "pending" && <Chip tone="warning">Awaiting response</Chip>}
