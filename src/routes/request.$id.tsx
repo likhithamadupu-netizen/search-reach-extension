@@ -99,6 +99,7 @@ function RequestDetail() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const alerts = useAlerts();
   const tracking = useTracking();
+  const escalations = useEscalations();
 
 
   const request = requests.find((r) => r.id.toLowerCase() === id.toLowerCase());
