@@ -48,6 +48,13 @@ function FindDonors() {
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [sort, setSort] = useState<"best" | "nearest">("best");
   const [selected, setSelected] = useState<string | null>(null);
+  /** Escalate Search — only the radius changes; matching rules stay identical. */
+  const [escalationNote, setEscalationNote] = useState<string | null>(null);
+
+  function escalateSearch(next: number) {
+    setRadius(next);
+    setEscalationNote(`Search escalated to ${next} km.`);
+  }
 
   const matches = useMemo(
     () =>
