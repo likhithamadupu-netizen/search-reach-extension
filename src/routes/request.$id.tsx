@@ -141,6 +141,9 @@ function RequestDetail() {
   const closed = request.status === "fulfilled" || request.status === "cancelled";
   const acceptedDonors = donors.filter((d) => request.acceptedDonorIds.includes(d.id));
   const invited = invites[request.id] ?? [];
+  /* --------- Day 5: current escalated search radius (10 → 20 → 30 km) -------- */
+  const searchRadiusKm = currentSearchRadius(escalations, request.id);
+  const escalationCount = escalationsFor(escalations, request.id).length;
 
   /* ------------------- live tracking (local demo, no GPS) ------------------ */
   const track = tracking[request.id] ?? EMPTY_TRACKING;
