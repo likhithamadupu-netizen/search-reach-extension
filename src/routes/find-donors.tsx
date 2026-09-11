@@ -48,6 +48,13 @@ function FindDonors() {
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [sort, setSort] = useState<"best" | "nearest">("best");
   const [selected, setSelected] = useState<string | null>(null);
+  /** Escalate Search — only the radius changes; matching rules stay identical. */
+  const [escalationNote, setEscalationNote] = useState<string | null>(null);
+
+  function escalateSearch(next: number) {
+    setRadius(next);
+    setEscalationNote(`Search escalated to ${next} km.`);
+  }
 
   const matches = useMemo(
     () =>
@@ -150,13 +157,25 @@ function FindDonors() {
             {matches.length} compatible donor{matches.length === 1 ? "" : "s"} within {radius} km
           </div>
 
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Search className="h-4 w-4" aria-hidden />
+            {matches.length} compatible donor{matches.length === 1 ? "" : "s"} within {radius} km
+            {escalationNote && <Chip tone="warning">{escalationNote}</Chip>}
+          </div>
+
           {matches.length === 0 ? (
             <EmptyState
-              title="No donors match yet"
-              description="Try widening the radius or relaxing the filters — compatibility is never relaxed."
+              title={`No suitable donors found within ${radius} km`}
+              description={
+                wider
+                  ? "Compatibility, eligibility, availability and ranking rules stay exactly the same — only the search radius widens."
+                  : "Consider contacting a blood bank or wider donor network."
+              }
               action={
                 wider ? (
-                  <Button onClick={() => setRadius(wider)}>Expand to {wider} km</Button>
+                  <Button onClick={() => escalateSearch(wider)}>
+                    Escalate Search → {wider} km
+                  </Button>
                 ) : (
                   <Button variant="outline" onClick={() => setOnlyAvailable(false)}>
                     Include unavailable donors
