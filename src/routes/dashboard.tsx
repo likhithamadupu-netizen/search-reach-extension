@@ -29,6 +29,7 @@ import {
   EMPTY_TRACKING,
 } from "@/lib/store";
 import { deriveStage, TRACKING_BADGE } from "@/lib/tracking";
+import { EscalateSearchButton, SearchRadiusChip } from "@/components/bb/escalate-search";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
