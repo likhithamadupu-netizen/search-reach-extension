@@ -38,6 +38,8 @@ export function EmergencyMap({
   confirmedScore,
   confirmedDistanceLabel,
   candidates = [],
+  searchRadiusKm = 10,
+  escalationCount = 0,
   className,
 }: {
   request: BloodRequest;
@@ -46,6 +48,9 @@ export function EmergencyMap({
   confirmedScore?: number | null;
   confirmedDistanceLabel?: string | null;
   candidates?: MapDonorPoint[];
+  /** Current (possibly escalated) search radius in km — drives the search ring. */
+  searchRadiusKm?: number;
+  escalationCount?: number;
   className?: string;
 }) {
   const status = DONOR_STATUS[stage] ?? null;
