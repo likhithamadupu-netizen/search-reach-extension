@@ -309,6 +309,7 @@ function DonorEmergencyAlerts({ donorId }: { donorId: string }) {
                     <MapPin className="h-3 w-3" aria-hidden />
                     {request.hospital} · {alert.distanceLabel}
                   </Chip>
+                  {alert.viaEscalation ? <Chip tone="warning">Expanded search</Chip> : null}
                 </div>
 
                 <div className="rounded-lg bg-muted/60 p-3">
@@ -483,6 +484,10 @@ export function RequestRow({
         <Chip tone="neutral">{TRACKING_BADGE[stage]}</Chip>
         <UrgencyChip urgency={request.urgency} />
         <StatusChip status={request.status} />
+        {!closed && <SearchRadiusChip request={request} />}
+        {!donorId && !closed && (
+          <EscalateSearchButton request={request} size="sm" variant="outline" />
+        )}
         {showDonorActions && (
           <Button
             size="sm"
