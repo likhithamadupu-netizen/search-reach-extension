@@ -226,6 +226,8 @@ function RequestDetail() {
                   <Send className="h-4 w-4" aria-hidden /> Notify compatible donors
                 </Button>
 
+                <EscalateSearchButton request={request} />
+
                 <Button
                   variant="outline"
                   onClick={() => {
