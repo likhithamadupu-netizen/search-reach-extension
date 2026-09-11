@@ -74,12 +74,7 @@ export function EscalateSearchButton({
 
   return (
     <>
-      <Button
-        size={size}
-        variant={variant}
-        className={className}
-        onClick={() => setOpen(true)}
-      >
+      <Button size={size} variant={variant} className={className} onClick={() => setOpen(true)}>
         <TrendingUp className="h-4 w-4" aria-hidden /> Escalate Search
       </Button>
 
@@ -96,10 +91,7 @@ export function EscalateSearchButton({
           <div className="grid grid-cols-2 gap-3">
             <Stat label="Current radius" value={`${esc.radiusKm} km`} />
             <Stat label="New radius" value={`${esc.nextRadiusKm} km`} />
-            <Stat
-              label="Escalation"
-              value={`${esc.escalationNumber}/${MAX_ESCALATIONS}`}
-            />
+            <Stat label="Escalation" value={`${esc.escalationNumber}/${MAX_ESCALATIONS}`} />
             <Stat label="New donors found" value={String(esc.newCandidates.length)} />
           </div>
 

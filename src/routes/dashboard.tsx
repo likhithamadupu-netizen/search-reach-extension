@@ -7,13 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader, EmptyState } from "@/components/bb/page";
 import { RequireAuth } from "@/components/bb/require-auth";
-import {
-  BloodTag,
-  Chip,
-  EligibilityChip,
-  StatusChip,
-  UrgencyChip,
-} from "@/components/bb/badges";
+import { BloodTag, Chip, EligibilityChip, StatusChip, UrgencyChip } from "@/components/bb/badges";
 import { canDonate, evaluateEligibility, formatDistance, haversineKm } from "@/lib/blood";
 import type { BloodRequest } from "@/lib/demo-data";
 import {
@@ -81,7 +75,10 @@ function DonorDashboard() {
     .filter((r) => canDonate(donor.bloodGroup, r.bloodGroup))
     .map((r) => ({
       request: r,
-      distanceKm: Math.round(haversineKm({ lat: donor.lat, lng: donor.lng }, { lat: r.lat, lng: r.lng }) * 10) / 10,
+      distanceKm:
+        Math.round(
+          haversineKm({ lat: donor.lat, lng: donor.lng }, { lat: r.lat, lng: r.lng }) * 10,
+        ) / 10,
     }))
     .sort((a, b) => a.distanceKm - b.distanceKm);
 
@@ -191,14 +188,12 @@ function DonorDashboard() {
                 <div className="flex flex-wrap gap-1.5">
                   <UrgencyChip urgency={request.urgency} />
                   <StatusChip status={request.status} />
-                  <Chip tone="neutral">{request.units} unit{request.units === 1 ? "" : "s"}</Chip>
+                  <Chip tone="neutral">
+                    {request.units} unit{request.units === 1 ? "" : "s"}
+                  </Chip>
                 </div>
                 <div className="mt-1 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    disabled={hasAccepted}
-                    onClick={() => handleAccept(request)}
-                  >
+                  <Button size="sm" disabled={hasAccepted} onClick={() => handleAccept(request)}>
                     {hasAccepted ? "Accepted" : "Accept request"}
                   </Button>
                   <Button asChild size="sm" variant="outline">
@@ -285,9 +280,7 @@ function DonorEmergencyAlerts({ donorId }: { donorId: string }) {
                   <div className="flex min-w-0 items-start gap-3">
                     <BloodTag group={request.bloodGroup} />
                     <div className="min-w-0">
-                      <p className="truncate text-base font-bold">
-                        Emergency · {request.id}
-                      </p>
+                      <p className="truncate text-base font-bold">Emergency · {request.id}</p>
                       <p className="truncate text-sm text-muted-foreground">
                         {request.bloodGroup} needed · {request.units} unit
                         {request.units === 1 ? "" : "s"}
@@ -319,14 +312,19 @@ function DonorEmergencyAlerts({ donorId }: { donorId: string }) {
                   <ul className="mt-1.5 space-y-1 text-sm">
                     {alert.why.map((w) => (
                       <li key={w} className="flex items-start gap-2">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                        <CheckCircle2
+                          className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                          aria-hidden
+                        />
                         <span className="min-w-0 break-words">{w}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {alert.response === "accepted" && <Chip tone="success">You accepted this alert</Chip>}
+                {alert.response === "accepted" && (
+                  <Chip tone="success">You accepted this alert</Chip>
+                )}
                 {alert.response === "declined" && (
                   <Chip tone="danger">You declined this emergency request.</Chip>
                 )}
@@ -365,7 +363,6 @@ function DonorEmergencyAlerts({ donorId }: { donorId: string }) {
 }
 
 /* --------------------------------- seeker -------------------------------- */
-
 
 function SeekerDashboard() {
   const user = useUser()!;
@@ -477,7 +474,6 @@ export function RequestRow({
                 : ""}
             </p>
           )}
-
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">

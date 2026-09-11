@@ -23,10 +23,7 @@ export function useEscalation(request: BloodRequest) {
   const alerts = useAlerts();
   const escalations = useEscalations();
 
-  const history = useMemo(
-    () => escalationsFor(escalations, request.id),
-    [escalations, request.id],
-  );
+  const history = useMemo(() => escalationsFor(escalations, request.id), [escalations, request.id]);
   const radiusKm = currentSearchRadius(escalations, request.id);
   const nextRadiusKm = nextEscalationRadius(escalations, request.id);
   const gate = canEscalate(request, alerts, escalations);
@@ -34,9 +31,7 @@ export function useEscalation(request: BloodRequest) {
   /** Compatible, eligible, available donors inside the NEW radius, not yet alerted. */
   const newCandidates = useMemo(() => {
     if (nextRadiusKm === null) return [];
-    const alerted = new Set(
-      alerts.filter((a) => a.requestId === request.id).map((a) => a.donorId),
-    );
+    const alerted = new Set(alerts.filter((a) => a.requestId === request.id).map((a) => a.donorId));
     return matchDonors(donors, {
       recipientGroup: request.bloodGroup,
       origin: { lat: request.lat, lng: request.lng },
@@ -79,4 +74,3 @@ export function useEscalation(request: BloodRequest) {
     run,
   };
 }
-

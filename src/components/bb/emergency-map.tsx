@@ -20,7 +20,9 @@ export interface MapDonorPoint {
   score: number;
 }
 
-const DONOR_STATUS: Partial<Record<TrackingStage, { label: string; tone: "info" | "warning" | "success" }>> = {
+const DONOR_STATUS: Partial<
+  Record<TrackingStage, { label: string; tone: "info" | "warning" | "success" }>
+> = {
   confirmed: { label: "Accepted", tone: "info" },
   en_route: { label: "En Route", tone: "warning" },
   donation_completed: { label: "Donation Completed", tone: "success" },
@@ -80,8 +82,8 @@ export function EmergencyMap({
   // Canvas units per km, derived from the same projection — so the search ring
   // always reflects the CURRENT radius instead of a hardcoded size.
   const kmPerLngDeg = 111.32 * Math.cos((request.lat * Math.PI) / 180) || 111.32;
-  const unitsPerKmX = ((100 - pad * 2) / spanLng) / kmPerLngDeg;
-  const unitsPerKmY = ((100 - pad * 2) / spanLat) / 110.57;
+  const unitsPerKmX = (100 - pad * 2) / spanLng / kmPerLngDeg;
+  const unitsPerKmY = (100 - pad * 2) / spanLat / 110.57;
   const ringRx = Math.min(Math.max(searchRadiusKm * unitsPerKmX, 8), 46);
   const ringRy = Math.min(Math.max(searchRadiusKm * unitsPerKmY, 8), 46);
   const escalated = escalationCount > 0;
@@ -92,7 +94,10 @@ export function EmergencyMap({
     stage === "en_route" ? 0.5 : stage === "donation_completed" || stage === "fulfilled" ? 1 : 0;
   const vehicle =
     donor && hospital
-      ? { x: donor.x + (hospital.x - donor.x) * progress, y: donor.y + (hospital.y - donor.y) * progress }
+      ? {
+          x: donor.x + (hospital.x - donor.x) * progress,
+          y: donor.y + (hospital.y - donor.y) * progress,
+        }
       : null;
 
   return (
@@ -163,9 +168,7 @@ export function EmergencyMap({
               rx={ringRx}
               ry={ringRy}
               className={
-                escalated
-                  ? "fill-warning/10 stroke-warning"
-                  : "fill-primary/5 stroke-primary/60"
+                escalated ? "fill-warning/10 stroke-warning" : "fill-primary/5 stroke-primary/60"
               }
               strokeWidth="0.6"
               strokeDasharray="2.5 1.5"
