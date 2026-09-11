@@ -291,6 +291,11 @@ export function EmergencyMap({
             {candidates.length > 0 ? ` · ${candidates.length} matched donor(s) shown` : ""}
           </Chip>
         )}
+        <Chip tone={escalated ? "warning" : "neutral"}>
+          <Radar className="h-3 w-3" aria-hidden />
+          Search radius: {searchRadiusKm} km
+        </Chip>
+        {escalated && <Chip tone="warning">Expanded emergency search</Chip>}
         <span className="ml-auto text-[11px] text-muted-foreground">
           Simulated locations · demo route · not live GPS
         </span>
